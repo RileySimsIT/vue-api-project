@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import db from '../db'
 
 export type User = {
 	id: string
@@ -17,11 +18,35 @@ export type User = {
  * @return  {Promise<User>}               
  */
 export const createUser = async (username: string, password: string, displayName?: string): Promise<User> => {
-	//TODO: Check if the user already exists
+	//TODO: variable validation
+	const existing = db.prepare("SELECT * FROM users WHERE username = ?").get(username)
+	if(existing){
+		throw new Error("Username is already taken")
+	}
 	const id = Math.random().toString(36).slice(2,10)
 	//TODO: Password security requirements (8+ characters w/ numbers, letters, & special characters)
 	const passwordHash = await bcrypt.hash(password,10)
 	const user: User = {id,username,passwordHash,displayName}
-	//TODO: Local database integration
+
+	const query = db.prepare(`
+		INSERT INTO users (id, username, passwordHash, displayName)
+		VALUES (?, ?, ?, ?)	
+	`)
+
+	query.run(id,username,passwordHash, displayName ?? null)
 	return user
+}
+
+/**
+ * Compares the raw string password with the associated user object's password hash
+ *
+ * @param   {User}              user      The current user object
+ * @param   {string}   		    password  The raw password to be compared against the hash
+ *
+ * @return  {Promise<boolean>}            True/false if the password validates
+ */
+export const validatePassword = async (user: User, password: string): Promise<boolean> =>{
+	//TODO: variable validation
+	//TODO: validate the user provided is the current user.
+	return bcrypt.compare(password, user.passwordHash)
 }
