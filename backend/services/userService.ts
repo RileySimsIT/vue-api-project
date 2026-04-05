@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import db from '../db'
+import db from '../db.ts'
 
 export type User = {
 	id: string
